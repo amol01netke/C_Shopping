@@ -1,109 +1,168 @@
-#include<iostream>
-using namespace std;
+#include<stdio.h>
+#include<malloc.h>
 
-//a 3x3 grid 
-char grid[3][3]={{'1','2','3'},{'4','5','6'},{'7','8','9'}};
+int productNumber[5]={1,2,3,4,5};
+char productName[5][15]={"Hair oil","Toothpaste","Toothbrush","Handwash","Facewash"};
+int productCost[5]={30,50,20,60,90};
+int productAvailable[5]={30,30,30,30,30};
 
-void printGrid(){
-	cout<<endl<<" "<<grid[0][0]<<"| "<<grid[0][1]<<"| "<<grid[0][2];
-	cout<<endl<<"---------";
-	cout<<endl<<" "<<grid[1][0]<<"| "<<grid[1][1]<<"| "<<grid[1][2];
-	cout<<endl<<"---------";
-	cout<<endl<<" "<<grid[2][0]<<"| "<<grid[2][1]<<"| "<<grid[2][2];
+struct Node{
+	int data;
+	struct Node *next;
+};
+
+struct Node *productNumberHead,*productNumberTail;
+struct Node *quantityHead,*quantityTail;
+struct Node *totalCostHead,*totalCostTail;
+
+struct Node *createNode(int data){
+	struct Node *newNode=(struct Node*)malloc(sizeof(struct Node));
+	newNode->data=data;
+	newNode->next=NULL;
+	return newNode;
 }
 
-char chooseTurn(int count){
-	return (count%2==0)?'O':'X';
+void appendProductNumberNode(struct Node *productNumberNode){
+	if(!productNumberHead){
+		productNumberHead=productNumberNode;
+		productNumberTail=productNumberNode;
+	}
+	else{
+		productNumberTail->next=productNumberNode;
+		productNumberTail=productNumberTail->next;
+	}
 }
 
-bool isCellNumberInvalid(int cellNumber){
-	return cellNumber<1 || cellNumber>9;
+void appendQuantityNode(struct Node *quantityNode){
+	if(!quantityHead){
+		quantityHead=quantityNode;
+		quantityTail=quantityNode;
+	}
+	else{
+		quantityTail->next=quantityNode;
+		quantityTail=quantityTail->next;
+	}
 }
 
-bool isCellOccupied(int row,int column){
-	return grid[row][column]=='X' || grid[row][column]=='O';
+void appendTotalCostNode(struct Node *totalCostNode){
+	if(!totalCostHead){
+		totalCostHead=totalCostNode;
+		totalCostTail=totalCostNode;
+	}
+	else{
+		totalCostTail->next=totalCostNode;
+		totalCostTail=totalCostTail->next;
+	}
 }
 
-void insertTurn(int row,int column,char turn){
-	grid[row][column]=turn;
+void printProductMenu(){
+	printf("\n---Product Menu---");
+	printf("\nNo.\t|Name\t\t|Cost\t|Available");
+	for(int i=0;i<5;i++){
+		printf("\n%d\t|%s\t|%d\t|%d",productNumber[i],productName[i],productCost[i],productAvailable[i]);
+	}
 }
 
-bool isWinner(char turn){
-	return	//horizontal comparison
-			 (grid[0][0]==turn && grid[0][1]==turn && grid[0][2]==turn)
-			|| (grid[1][0]==turn && grid[1][1]==turn && grid[1][2]==turn)
-			|| (grid[2][0]==turn && grid[2][1]==turn && grid[2][2]==turn)
-			
-			//vertical comparsion
-			|| (grid[0][0]==turn && grid[1][0]==turn && grid[2][0]==turn)
-			|| (grid[0][1]==turn && grid[1][1]==turn && grid[2][1]==turn)
-			|| (grid[0][2]==turn && grid[1][2]==turn && grid[2][2]==turn)
-			
-			//diagonal comparison
-			|| (grid[0][0]==turn && grid[1][1]==turn && grid[2][2]==turn)
-			|| (grid[0][2]==turn && grid[1][1]==turn && grid[2][0]==turn);
+int isProductNumberInvalid(int productNumber){
+	return productNumber<1 || productNumber>5;
 }
 
-bool isDraw(int count){
-	return count>9;
+int isQuantityInvalid(int quantity){
+	return quantity<0 || quantity>5;
+}
+
+int isProductUnavailable(int productNumber,int quantity){
+	return productAvailable[productNumber-1]<quantity;
+}
+
+void updateQuantity(int productNumber,int quantity){
+	productAvailable[productNumber-1]-=quantity;
+}
+
+int calculateGrandTotal(){
+	struct Node *ptr=totalCostHead;
+	int grandTotal=0;
+	while(ptr!=NULL){
+		grandTotal+=ptr->data;
+		ptr=ptr->next;
+	}
+	return grandTotal;
+}
+
+void printInvoice(){
+	struct Node *ptr1=productNumberHead;
+	struct Node *ptr2=quantityHead;
+	struct Node *ptr3=totalCostHead;
+
+	printf("\n---Invoice---");
+	printf("\nNo.\t|Name\t\t|Cost\t|Quantity\t|Total cost");
+	while(ptr1!=NULL){
+		printf("\n%d\t|%s\t|%d\t|%d\t\t|%d",ptr1->data,productName[ptr1->data-1],productCost[ptr1->data-1],ptr2->data,ptr3->data);
+		ptr1=ptr1->next;
+		ptr2=ptr2->next;
+		ptr3=ptr3->next;	
+	}
+	printf("\n-----------------------------------------------------------");
+	printf("\nGrand total\t\t\t\t\t|%d",calculateGrandTotal());
 }
 
 int main(){
-	int count=1;
+	int productNumber,quantity,totalCost,conitnueOrNot;
+	struct Node *productNumberNode,*quantityNode,*totalCostNode;
 
-	cout<<endl<<"---3x3 Tic-Tac-Toe---";
-	
+	//repeat the loop until the customer wishes to stop
 	while(1){
-		char turn=chooseTurn(count);
-		cout<<endl<<"Turn:"<<turn;
+		//print the menu of products
+		printProductMenu();
+
+		//read a product number from the customer
+		get_product_number:
+			printf("\nEnter a product number:");
+			scanf("%d",&productNumber);
 		
-		//print the grid
-		printGrid();
+		if(isProductNumberInvalid(productNumber)){
+			printf("\nInvalid input!");
+			goto get_product_number;
+		}
 		
-		//read a cell number from the player
-		int cellNumber;
-		get_cell_number:
-			cout<<endl<<"Enter a cell number(1-9):";
-			cin>>cellNumber;
+		//read the quantity of the product from the customer
+		get_quantity:
+			printf("\nEnter quantity(Maximum 5 at one time!):");
+			scanf("%d",&quantity);
 		
-		if(isCellNumberInvalid(cellNumber)){
-			cout<<endl<<"Invalid input!";
-			goto get_cell_number;
+		if(isQuantityInvalid(quantity)){
+			printf("\nInvalid input!");
+			goto get_quantity;
+		}
+		
+		if(isProductUnavailable(productNumber,quantity)){
+			printf("\nSorry,this product is no more available!");
+			goto get_product_number;
 		}
 
-		//set row and column as per cell number
-		int row,column;
-		switch(cellNumber){
-			case 1:row=0,column=0;break;
-			case 2:row=0,column=1;break;
-			case 3:row=0,column=2;break;	
-			case 4:row=1,column=0;break;
-			case 5:row=1,column=1;break;
-			case 6:row=1,column=2;break;
-			case 7:row=2,column=0;break;
-			case 8:row=2,column=1;break;
-			case 9:row=2,column=2;break;
-		}
-
-		if(isCellOccupied(row,column)){
-			cout<<endl<<"Cell is occupied!";
-			goto get_cell_number;
-		}
-
-		insertTurn(row,column,turn);
-		count++;
-
-		if(isWinner(turn)){
-			cout<<endl<<"Winner is "<<turn<<"!";
-			printGrid();
+		//update the quantity every time
+		updateQuantity(productNumber,quantity);
+		
+		//calculate total cost as per the quantity
+		totalCost=productCost[productNumber-1]*quantity;
+		
+		//create specfic nodes for each data we get from the user
+		productNumberNode=createNode(productNumber);
+		quantityNode=createNode(quantity);
+		totalCostNode=createNode(totalCost);
+		
+		//append the nodes specifically
+		appendProductNumberNode(productNumberNode);
+		appendQuantityNode(quantityNode);
+		appendTotalCostNode(totalCostNode);
+	
+		printf("\nPress 0 if you want to continue:");
+		scanf("%d",&conitnueOrNot);
+		if(conitnueOrNot!=0)
 			break;
-		}
+	}	
 
-		if(isDraw(count)){
-			cout<<endl<<"Game is draw!";
-			printGrid();
-			break;
-		}
-	}
+	//print the invoice
+	printInvoice();
 	return 0;
-} 
+}
